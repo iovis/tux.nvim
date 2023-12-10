@@ -9,7 +9,10 @@ local tux = {}
 ---@class TuxOpts
 tux.default_config = {
   pane = {
+    ---@type number pane split size
     size = 30,
+    ---@type string tmux target
+    target = "{last}",
   },
 }
 
@@ -24,11 +27,20 @@ end
 ---@param command string
 ---@param opts? TuxOpts
 tux.run = function(command, opts)
+  opts = vim.tbl_deep_extend("force", tux.config, opts or {})
+
   -- Exit copy mode if pane exists
-  vim.fn.system("tmux send -t {last} -X cancel")
+  tux.exit_copy_mode(opts.pane.target)
 
   local tmux_command = tux.parse(command, opts)
   vim.fn.system(tmux_command)
+end
+
+---Exit copy mode from the given pane
+---@param pane string Tmux target pane
+tux.exit_copy_mode = function(pane)
+  local command = ("tmux send -t %s -X cancel"):format(pane)
+  vim.fn.system(command)
 end
 
 ---Generate Tmux command
