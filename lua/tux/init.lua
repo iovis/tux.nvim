@@ -6,13 +6,14 @@ local tux = {}
 -- TODO:
 -- pane, window, popup
 -- remain on exit
+-- focus
 -- Tux command
 -- tests
 
 ---@class TuxOpts
 tux.default_config = {
-  -- ---@type TuxStrategy
-  -- default_strategy = "pane",
+  ---@type TuxStrategy
+  default_strategy = "pane",
   ---@class TuxPaneOpts
   pane = {
     ---@type TuxPaneOrientation
@@ -28,6 +29,22 @@ tux.default_config = {
 tux.setup = function(opts)
   opts = opts or {}
   tux.config = vim.tbl_deep_extend("force", tux.default_config, opts)
+
+  vim.api.nvim_create_user_command("Tux", function(ctx)
+    tux.run(ctx.args)
+  end, { nargs = "+" })
+
+  vim.api.nvim_create_user_command("TuxPane", function(ctx)
+    tux.pane(ctx.args)
+  end, { nargs = "+" }) -- complete = "shellcmd"
+end
+
+---Run command in Tmux using the default strategy
+---@param command string
+tux.run = function(command)
+  local strategy = tux.config.default_strategy
+
+  tux[strategy](command)
 end
 
 ---Run command in a Tmux pane
