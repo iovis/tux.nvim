@@ -5,7 +5,7 @@ local tux = {}
 
 -- TODO:
 -- popup
--- remain on exit
+--    remain on exit
 
 ---@class TuxOpts
 tux.default_config = {
@@ -51,7 +51,6 @@ end
 ---@param command string
 tux.run = function(command)
   local strategy = tux.config.default_strategy
-
   tux[strategy](command)
 end
 
@@ -61,16 +60,6 @@ end
 tux.window = function(command, opts)
   opts = vim.tbl_deep_extend("force", tux.config.window, opts or {})
 
-  local tmux_command = tux.window_command(command, opts)
-
-  vim.cmd(tmux_command)
-end
-
----Run command in a Tmux window
----@private
----@param command string
----@param opts TuxWindowOpts
-tux.window_command = function(command, opts)
   local tmux_command = "tmux new-window"
 
   if opts.detached then
@@ -89,26 +78,25 @@ tux.window_command = function(command, opts)
   end
 
   command = ("$SHELL -i -c %s").format(vim.fn.shellescape(command))
-  return ("silent !%s %s"):format(tmux_command, command)
+  tmux_command = ("silent !%s %s"):format(tmux_command, command)
+
+  vim.cmd(tmux_command)
 end
 
 ---Run command in a Tmux pane
 ---@param command string
 ---@param opts? TuxPaneOpts
 tux.pane = function(command, opts)
-  local tmux_command
-
   opts = vim.tbl_deep_extend("force", tux.config.pane, opts or {})
 
   if tux.number_of_panes() == 1 then
     tux.create_pane(opts)
-    tmux_command = tux.send_keys(command)
+    tux.last_pane()
   else
     tux.exit_copy_mode(opts.target)
-    tmux_command = tux.send_keys(command, opts.target)
   end
 
-  vim.cmd(tmux_command)
+  tux.send_keys(command, opts.target)
 end
 
 ---Create pane
@@ -138,6 +126,11 @@ tux.exit_copy_mode = function(pane)
   vim.fn.system(command)
 end
 
+---Navigate to last pane
+tux.last_pane = function()
+  vim.fn.system("tmux last-pane")
+end
+
 ---Number of panes in current window
 ---@return number
 tux.number_of_panes = function()
@@ -148,17 +141,10 @@ end
 ---Generate Tmux command
 ---@private
 ---@param command string
----@param target? string
----@return string
+---@param target string
 tux.send_keys = function(command, target)
-  local tmux_command = "tmux send"
-
-  if target then
-    tmux_command = ("%s -t %s"):format(tmux_command, target)
-  end
-
-  command = vim.fn.shellescape(command)
-  return ("silent !%s %s Enter"):format(tmux_command, command)
+  local tmux_command = ("silent !tmux send -t %s %s Enter"):format(target, vim.fn.shellescape(command))
+  vim.cmd(tmux_command)
 end
 
 return tux
