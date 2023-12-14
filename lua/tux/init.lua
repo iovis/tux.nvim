@@ -44,19 +44,19 @@ tux.setup = function(opts)
 
   vim.api.nvim_create_user_command("Tux", function(ctx)
     tux.run(ctx.args)
-  end, { nargs = "+" }) -- complete = "shellcmd"
+  end, { nargs = "*" }) -- complete = "shellcmd"
 
   vim.api.nvim_create_user_command("Tuxpane", function(ctx)
     tux.pane(ctx.args)
-  end, { nargs = "+" })
+  end, { nargs = "*" })
 
   vim.api.nvim_create_user_command("Tuxwindow", function(ctx)
     tux.window(ctx.args)
-  end, { nargs = "+" })
+  end, { nargs = "*" })
 
   vim.api.nvim_create_user_command("Tuxpopup", function(ctx)
     tux.popup(ctx.args)
-  end, { nargs = "+" })
+  end, { nargs = "*" })
 end
 
 ---Run command in Tmux using the default strategy
@@ -89,7 +89,9 @@ tux.window = function(command, opts)
     tmux_command = ("%s -S"):format(tmux_command)
   end
 
-  tmux_command = tmux_command .. " $SHELL -i -c " .. vim.fn.shellescape(command)
+  if command ~= "" then
+    tmux_command = tmux_command .. " $SHELL -i -c " .. vim.fn.shellescape(command)
+  end
 
   vim.cmd(tmux_command)
 end
@@ -116,9 +118,11 @@ tux.popup = function(command, opts)
     tmux_command = ("%s -T %s"):format(tmux_command, opts.title)
   end
 
-  tmux_command = tmux_command .. " $SHELL -i -c " .. vim.fn.shellescape(command)
+  if command ~= "" then
+    tmux_command = tmux_command .. " $SHELL -i -c " .. vim.fn.shellescape(command)
+  end
 
-  vim.cmd(tmux_command)
+  vim.cmd(vim.print(tmux_command))
 end
 
 ---Run command in a Tmux pane
@@ -134,7 +138,11 @@ tux.pane = function(command, opts)
     tux.exit_copy_mode(opts.target)
   end
 
-  tux.send_keys(command, opts.target)
+  if command ~= "" then
+    tux.send_keys(command, opts.target)
+  else
+    tux.last_pane()
+  end
 end
 
 ---Create pane
