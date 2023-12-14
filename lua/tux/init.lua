@@ -1,11 +1,9 @@
 local tux = {}
 
 ---@alias TuxPaneOrientation "horizontal"|"vertical"
----@alias TuxStrategy "pane"|"window"|"float"
-
--- TODO:
--- popup
---    remain on exit
+---@alias TuxPopupBorder "single"|"rounded"|"double"|"heavy"|"simple"|"padded"|"none"
+---@alias TuxPopupCloseOnExit "on"|"off"|"success" Close the popup when the command exits
+---@alias TuxStrategy "pane"|"window"|"popup"
 
 ---@class TuxOpts
 tux.default_config = {
@@ -18,6 +16,16 @@ tux.default_config = {
     ---@type number Size as percentage
     size = 30,
     target = ":.{last}",
+  },
+  ---@class TuxPopupOpts
+  popup = {
+    ---@type TuxPopupCloseOnExit
+    auto_close = "off",
+    width = "50%",
+    height = "50%",
+    border = "rounded",
+    ---@type string?
+    title = nil,
   },
   ---@class TuxWindowOpts
   window = {
@@ -45,6 +53,10 @@ tux.setup = function(opts)
   vim.api.nvim_create_user_command("Tuxwindow", function(ctx)
     tux.window(ctx.args)
   end, { nargs = "+" })
+
+  vim.api.nvim_create_user_command("Tuxpopup", function(ctx)
+    tux.popup(ctx.args)
+  end, { nargs = "+" })
 end
 
 ---Run command in Tmux using the default strategy
@@ -60,7 +72,7 @@ end
 tux.window = function(command, opts)
   opts = vim.tbl_deep_extend("force", tux.config.window, opts or {})
 
-  local tmux_command = "tmux new-window"
+  local tmux_command = "silent !tmux new-window"
 
   if opts.detached then
     tmux_command = ("%s -d"):format(tmux_command)
@@ -77,8 +89,34 @@ tux.window = function(command, opts)
     tmux_command = ("%s -S"):format(tmux_command)
   end
 
-  command = ("$SHELL -i -c %s").format(vim.fn.shellescape(command))
-  tmux_command = ("silent !%s %s"):format(tmux_command, command)
+  tmux_command = tmux_command .. " $SHELL -i -c " .. vim.fn.shellescape(command)
+
+  vim.cmd(tmux_command)
+end
+
+---Run command in a Tmux popup
+---@param command string
+---@param opts? TuxPopupOpts
+tux.popup = function(command, opts)
+  opts = vim.tbl_deep_extend("force", tux.config.popup, opts or {})
+
+  local tmux_command = ("silent !tmux display-popup -b %s -w %s -h %s"):format(
+    opts.border,
+    vim.fn.escape(opts.width, "%"),
+    vim.fn.escape(opts.height, "%")
+  )
+
+  if opts.auto_close == "on" then
+    tmux_command = tmux_command .. " -E"
+  elseif opts.auto_close == "success" then
+    tmux_command = tmux_command .. " -EE"
+  end
+
+  if opts.title then
+    tmux_command = ("%s -T %s"):format(tmux_command, opts.title)
+  end
+
+  tmux_command = tmux_command .. " $SHELL -i -c " .. vim.fn.shellescape(command)
 
   vim.cmd(tmux_command)
 end
