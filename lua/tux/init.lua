@@ -122,7 +122,7 @@ tux.popup = function(command, opts)
     tmux_command = tmux_command .. " $SHELL -i -c " .. vim.fn.shellescape(command)
   end
 
-  vim.cmd(vim.print(tmux_command))
+  vim.cmd(tmux_command)
 end
 
 ---Run command in a Tmux pane
