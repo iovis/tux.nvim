@@ -1,8 +1,10 @@
 local u = require("tux.utils")
 
 -- TODO:
--- - Split files
 -- - Use `vim.validate()` (See :h vim.validate())
+-- - Check if in tmux session
+-- - `Tmux` command?
+
 local tux = {}
 
 ---@alias TuxPaneOrientation "horizontal"|"vertical"
@@ -40,29 +42,6 @@ tux.default_config = {
     select = false,
   },
 }
-
----Setup Tux
----@param opts TuxOpts
-tux.setup = function(opts)
-  opts = opts or {}
-  tux.config = vim.tbl_deep_extend("force", tux.default_config, opts)
-
-  vim.api.nvim_create_user_command("Tux", function(ctx)
-    tux.run(ctx.args)
-  end, { nargs = "*" }) -- complete = "shellcmd"
-
-  vim.api.nvim_create_user_command("Tuxpane", function(ctx)
-    tux.pane(ctx.args)
-  end, { nargs = "*" })
-
-  vim.api.nvim_create_user_command("Tuxwindow", function(ctx)
-    tux.window(ctx.args)
-  end, { nargs = "*" })
-
-  vim.api.nvim_create_user_command("Tuxpopup", function(ctx)
-    tux.popup(ctx.args)
-  end, { nargs = "*" })
-end
 
 ---Run command in Tmux using the default strategy
 ---@param command string
@@ -136,66 +115,44 @@ end
 tux.pane = function(command, opts)
   opts = vim.tbl_deep_extend("force", tux.config.pane, opts or {})
 
-  if tux.number_of_panes() == 1 then
-    tux.create_pane(opts)
-    tux.last_pane()
+  if u.number_of_panes() == 1 then
+    u.create_pane(opts)
+    u.focus_last_pane()
   else
-    tux.exit_copy_mode(opts.target)
+    u.exit_copy_mode(opts.target)
   end
 
   if command ~= "" then
-    tux.send_keys(command, opts.target)
+    u.send_keys(command, opts.target)
   else
-    tux.last_pane()
+    u.focus_last_pane()
   end
 end
 
----Create pane
----@param opts TuxPaneOpts
-tux.create_pane = function(opts)
-  assert(
-    opts.orientation == "horizontal" or opts.orientation == "vertical",
-    'pane.orientation should be "horizontal"|"vertical". Given: ',
-    opts.orientation
-  )
+local generate_commands = function()
+  vim.api.nvim_create_user_command("Tux", function(ctx)
+    tux.run(ctx.args)
+  end, { nargs = "*" }) -- complete = "shellcmd"
 
-  local orientation
-  if opts.orientation == "horizontal" then
-    orientation = "-v"
-  elseif opts.orientation == "vertical" then
-    orientation = "-h"
-  end
+  vim.api.nvim_create_user_command("Tuxpane", function(ctx)
+    tux.pane(ctx.args)
+  end, { nargs = "*" })
 
-  local command = ("tmux split-window %s -p %d"):format(orientation, opts.size)
-  vim.fn.system(command)
+  vim.api.nvim_create_user_command("Tuxwindow", function(ctx)
+    tux.window(ctx.args)
+  end, { nargs = "*" })
+
+  vim.api.nvim_create_user_command("Tuxpopup", function(ctx)
+    tux.popup(ctx.args)
+  end, { nargs = "*" })
 end
 
----Exit copy mode from the given pane
----@param pane string Tmux target pane
-tux.exit_copy_mode = function(pane)
-  local command = ("tmux send -t %s -X cancel"):format(pane)
-  vim.fn.system(command)
-end
-
----Navigate to last pane
-tux.last_pane = function()
-  vim.fn.system("tmux last-pane")
-end
-
----Number of panes in current window
----@return number
-tux.number_of_panes = function()
-  local command = "tmux list-panes | wc -l"
-  return tonumber(vim.fn.system(command)) --[[@as number]]
-end
-
----Send keys to target
----@private
----@param command string
----@param target string
-tux.send_keys = function(command, target)
-  local tmux_command = ("tmux send -t %s %s Enter"):format(target, vim.fn.shellescape(command))
-  u.execute(tmux_command)
+---Setup Tux
+---@param opts TuxOpts
+tux.setup = function(opts)
+  opts = opts or {}
+  tux.config = vim.tbl_deep_extend("force", tux.default_config, opts)
+  generate_commands()
 end
 
 return tux
