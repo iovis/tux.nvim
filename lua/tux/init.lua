@@ -1,3 +1,8 @@
+local u = require("tux.utils")
+
+-- TODO:
+-- - Split files
+-- - Use `vim.validate()` (See :h vim.validate())
 local tux = {}
 
 ---@alias TuxPaneOrientation "horizontal"|"vertical"
@@ -72,7 +77,7 @@ end
 tux.window = function(command, opts)
   opts = vim.tbl_deep_extend("force", tux.config.window, opts or {})
 
-  local tmux_command = "silent !tmux new-window"
+  local tmux_command = "tmux new-window"
 
   if opts.detached then
     tmux_command = ("%s -d"):format(tmux_command)
@@ -93,7 +98,7 @@ tux.window = function(command, opts)
     tmux_command = tmux_command .. " $SHELL -i -c " .. vim.fn.shellescape(command)
   end
 
-  vim.cmd(tmux_command)
+  u.execute(tmux_command)
 end
 
 ---Run command in a Tmux popup
@@ -102,7 +107,7 @@ end
 tux.popup = function(command, opts)
   opts = vim.tbl_deep_extend("force", tux.config.popup, opts or {})
 
-  local tmux_command = ("silent !tmux display-popup -b %s -w %s -h %s"):format(
+  local tmux_command = ("tmux display-popup -b %s -w %s -h %s"):format(
     opts.border,
     vim.fn.escape(opts.width, "%"),
     vim.fn.escape(opts.height, "%")
@@ -122,7 +127,7 @@ tux.popup = function(command, opts)
     tmux_command = tmux_command .. " $SHELL -i -c " .. vim.fn.shellescape(command)
   end
 
-  vim.cmd(tmux_command)
+  u.execute(tmux_command)
 end
 
 ---Run command in a Tmux pane
@@ -184,13 +189,13 @@ tux.number_of_panes = function()
   return tonumber(vim.fn.system(command)) --[[@as number]]
 end
 
----Generate Tmux command
+---Send keys to target
 ---@private
 ---@param command string
 ---@param target string
 tux.send_keys = function(command, target)
-  local tmux_command = ("silent !tmux send -t %s %s Enter"):format(target, vim.fn.shellescape(command))
-  vim.cmd(tmux_command)
+  local tmux_command = ("tmux send -t %s %s Enter"):format(target, vim.fn.shellescape(command))
+  u.execute(tmux_command)
 end
 
 return tux
