@@ -2,7 +2,6 @@ local u = require("tux.utils")
 
 -- TODO:
 -- - Use `vim.validate()` (See :h vim.validate())
--- - Check if in tmux session
 -- - `Tmux` command?
 
 local tux = {}
@@ -54,6 +53,11 @@ end
 ---@param command string
 ---@param opts? TuxWindowOpts
 tux.window = function(command, opts)
+  if not vim.env.TMUX then
+    vim.notify("Not in tmux session", vim.log.levels.WARN)
+    return
+  end
+
   opts = vim.tbl_deep_extend("force", tux.config.window, opts or {})
 
   local tmux_command = "tmux new-window"
@@ -84,6 +88,11 @@ end
 ---@param command string
 ---@param opts? TuxPopupOpts
 tux.popup = function(command, opts)
+  if not vim.env.TMUX then
+    vim.notify("Not in tmux session", vim.log.levels.WARN)
+    return
+  end
+
   opts = vim.tbl_deep_extend("force", tux.config.popup, opts or {})
 
   local tmux_command = ("tmux display-popup -b %s -w %s -h %s"):format(
@@ -113,6 +122,11 @@ end
 ---@param command string
 ---@param opts? TuxPaneOpts
 tux.pane = function(command, opts)
+  if not vim.env.TMUX then
+    vim.notify("Not in tmux session", vim.log.levels.WARN)
+    return
+  end
+
   opts = vim.tbl_deep_extend("force", tux.config.pane, opts or {})
 
   if u.number_of_panes() == 1 then
