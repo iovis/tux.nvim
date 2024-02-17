@@ -51,7 +51,7 @@ M.create_pane = function(opts)
     orientation = "-h"
   end
 
-  local command = ("tmux split-window %s -p %d"):format(orientation, opts.size)
+  local command = ("tmux split-window %s -l '%d%%'"):format(orientation, opts.size)
   vim.fn.system(command)
 end
 
