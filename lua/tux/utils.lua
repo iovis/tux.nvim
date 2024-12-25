@@ -36,7 +36,7 @@ M.exit_copy_mode = function(pane)
 end
 
 ---Create pane
----@param opts TuxPaneOpts
+---@param opts tux.pane.Opts
 M.create_pane = function(opts)
   assert(
     opts.orientation == "horizontal" or opts.orientation == "vertical",

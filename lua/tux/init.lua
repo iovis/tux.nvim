@@ -6,26 +6,26 @@ local u = require("tux.utils")
 
 local tux = {}
 
----@alias TuxPaneOrientation "horizontal"|"vertical"
----@alias TuxPopupBorder "single"|"rounded"|"double"|"heavy"|"simple"|"padded"|"none"
----@alias TuxPopupCloseOnExit "on"|"off"|"success" Close the popup when the command exits
----@alias TuxStrategy "pane"|"window"|"popup"
+---@alias tux.pane.orientation "horizontal"|"vertical"
+---@alias tux.popup.border "single"|"rounded"|"double"|"heavy"|"simple"|"padded"|"none"
+---@alias tux.popup.close_on_exit "on"|"off"|"success" Close the popup when the command exits
+---@alias tux.strategy "pane"|"window"|"popup"
 
----@class TuxOpts
+---@class tux.Opts
 tux.default_config = {
-  ---@type TuxStrategy
+  ---@type tux.strategy
   default_strategy = "pane",
-  ---@class TuxPaneOpts
+  ---@class tux.pane.Opts
   pane = {
-    ---@type TuxPaneOrientation
+    ---@type tux.pane.orientation
     orientation = "horizontal",
     ---@type number Size as percentage
     size = 30,
     target = ":.{last}",
   },
-  ---@class TuxPopupOpts
+  ---@class tux.popup.Opts
   popup = {
-    ---@type TuxPopupCloseOnExit
+    ---@type tux.popup.close_on_exit
     auto_close = "off",
     width = "50%",
     height = "50%",
@@ -33,7 +33,7 @@ tux.default_config = {
     ---@type string?
     title = nil,
   },
-  ---@class TuxWindowOpts
+  ---@class tux.window.Opts
   window = {
     detached = false,
     name = nil,
@@ -51,7 +51,7 @@ end
 
 ---Run command in a Tmux window
 ---@param command string
----@param opts? TuxWindowOpts
+---@param opts? tux.window.Opts
 tux.window = function(command, opts)
   if not vim.env.TMUX then
     vim.notify("Not in tmux session", vim.log.levels.WARN)
@@ -86,7 +86,7 @@ end
 
 ---Run command in a Tmux popup
 ---@param command string
----@param opts? TuxPopupOpts
+---@param opts? tux.popup.Opts
 tux.popup = function(command, opts)
   if not vim.env.TMUX then
     vim.notify("Not in tmux session", vim.log.levels.WARN)
@@ -120,7 +120,7 @@ end
 
 ---Run command in a Tmux pane
 ---@param command string
----@param opts? TuxPaneOpts
+---@param opts? tux.pane.Opts
 tux.pane = function(command, opts)
   if not vim.env.TMUX then
     vim.notify("Not in tmux session", vim.log.levels.WARN)
@@ -162,7 +162,7 @@ local generate_commands = function()
 end
 
 ---Setup Tux
----@param opts TuxOpts
+---@param opts tux.Opts
 tux.setup = function(opts)
   opts = opts or {}
   tux.config = vim.tbl_deep_extend("force", tux.default_config, opts)
