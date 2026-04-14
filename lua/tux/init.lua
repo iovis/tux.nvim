@@ -42,6 +42,29 @@ tux.default_config = {
   },
 }
 
+local function in_tmux()
+  if not vim.env.TMUX then
+    vim.notify("Not in tmux session", vim.log.levels.WARN)
+    return false
+  end
+
+  return true
+end
+
+local function prepare_pane(opts)
+  if u.number_of_panes() == 1 then
+    u.create_pane(opts)
+    u.focus_last_pane()
+  else
+    u.exit_copy_mode(opts.target)
+  end
+end
+
+local function range_text(line1, line2)
+  local lines = vim.api.nvim_buf_get_lines(0, line1 - 1, line2, false)
+  return table.concat(lines, "\n")
+end
+
 ---Run command in Tmux using the default strategy
 ---@param command string
 tux.run = function(command)
@@ -49,12 +72,32 @@ tux.run = function(command)
   tux[strategy](command)
 end
 
+---Run selected lines in the target pane as literal text
+---@param line1 integer
+---@param line2 integer
+---@param opts? tux.pane.Opts
+tux.run_range = function(line1, line2, opts)
+  if not in_tmux() then
+    return
+  end
+
+  opts = vim.tbl_deep_extend("force", tux.config.pane, opts or {})
+
+  prepare_pane(opts)
+
+  local text = range_text(line1, line2)
+  if text ~= "" then
+    u.paste_text(text, opts.target)
+  else
+    u.focus_last_pane()
+  end
+end
+
 ---Run command in a Tmux window
 ---@param command string
 ---@param opts? tux.window.Opts
 tux.window = function(command, opts)
-  if not vim.env.TMUX then
-    vim.notify("Not in tmux session", vim.log.levels.WARN)
+  if not in_tmux() then
     return
   end
 
@@ -88,8 +131,7 @@ end
 ---@param command string
 ---@param opts? tux.popup.Opts
 tux.popup = function(command, opts)
-  if not vim.env.TMUX then
-    vim.notify("Not in tmux session", vim.log.levels.WARN)
+  if not in_tmux() then
     return
   end
 
@@ -122,19 +164,13 @@ end
 ---@param command string
 ---@param opts? tux.pane.Opts
 tux.pane = function(command, opts)
-  if not vim.env.TMUX then
-    vim.notify("Not in tmux session", vim.log.levels.WARN)
+  if not in_tmux() then
     return
   end
 
   opts = vim.tbl_deep_extend("force", tux.config.pane, opts or {})
 
-  if u.number_of_panes() == 1 then
-    u.create_pane(opts)
-    u.focus_last_pane()
-  else
-    u.exit_copy_mode(opts.target)
-  end
+  prepare_pane(opts)
 
   if command ~= "" then
     u.send_keys(command, opts.target)
@@ -145,8 +181,18 @@ end
 
 local generate_commands = function()
   vim.api.nvim_create_user_command("Tux", function(ctx)
+    if ctx.range > 0 then
+      if ctx.args ~= "" then
+        vim.notify("Tux does not accept both a range and command arguments", vim.log.levels.WARN)
+        return
+      end
+
+      tux.run_range(ctx.line1, ctx.line2)
+      return
+    end
+
     tux.run(ctx.args)
-  end, { nargs = "*" }) -- complete = "shellcmd"
+  end, { nargs = "*", range = true }) -- complete = "shellcmd"
 
   vim.api.nvim_create_user_command("Tuxpane", function(ctx)
     tux.pane(ctx.args)

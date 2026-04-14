@@ -16,6 +16,17 @@ M.send_keys = function(command, target)
   M.execute(tmux_command)
 end
 
+---Paste literal text into target pane using a temporary tmux buffer
+---@param text string
+---@param target string
+M.paste_text = function(text, target)
+  local buffer_name = ("tux.nvim.%d"):format(vim.fn.getpid())
+
+  vim.system({ "tmux", "set-buffer", "-b", buffer_name, "--", text }, { text = true }):wait()
+  vim.system({ "tmux", "paste-buffer", "-t", target, "-b", buffer_name, "-d" }, { text = true }):wait()
+  vim.system({ "tmux", "send-keys", "-t", target, "Enter" }, { text = true }):wait()
+end
+
 ---Navigate to last pane
 M.focus_last_pane = function()
   vim.fn.system("tmux last-pane")
