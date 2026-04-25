@@ -66,7 +66,7 @@ vim.keymap.set("n", "<leader>sw", "<cmd>Tux cargo watch -x check<cr>", { buf = 0
 ```
 
 Vim filename modifiers such as `%`, `%:.`, and `%:t:r` are expanded because Tux
-runs through Neovim's shell command path:
+uses Neovim's `expandcmd()` before sending commands:
 
 ```lua
 vim.keymap.set("n", "s<cr>", "<cmd>Tux python %<cr>", { buf = 0 })
@@ -86,6 +86,8 @@ vim.keymap.set("n", "m<cr>", "<cmd>Tux c23 -o %:.:r %:.<cr>", { buf = 0 })
 - `:Tuxpane` sends the command to a tmux pane.
 - `:Tuxwindow` runs the command in a new tmux window.
 - `:Tuxpopup` runs the command in a tmux popup.
+
+All Tux commands use shell command completion.
 
 `:Tux` also accepts a range. With no command arguments, the selected text is
 pasted literally into the target tmux pane:

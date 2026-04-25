@@ -1,9 +1,5 @@
 local u = require("tux.utils")
 
--- TODO:
--- - Use `vim.validate()` (See :h vim.validate())
--- - `Tmux` command?
-
 local tux = {}
 
 ---@alias tux.pane.orientation "horizontal"|"vertical"
@@ -364,19 +360,19 @@ local generate_commands = function()
     end
 
     tux.run(ctx.args)
-  end, { nargs = "*", range = true }) -- complete = "shellcmd"
+  end, { nargs = "*", range = true, complete = "shellcmd" })
 
   vim.api.nvim_create_user_command("Tuxpane", function(ctx)
     tux.pane(ctx.args)
-  end, { nargs = "*" })
+  end, { nargs = "*", complete = "shellcmd" })
 
   vim.api.nvim_create_user_command("Tuxwindow", function(ctx)
     tux.window(ctx.args)
-  end, { nargs = "*" })
+  end, { nargs = "*", complete = "shellcmd" })
 
   vim.api.nvim_create_user_command("Tuxpopup", function(ctx)
     tux.popup(ctx.args)
-  end, { nargs = "*" })
+  end, { nargs = "*", complete = "shellcmd" })
 end
 
 ---Setup Tux
