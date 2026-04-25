@@ -204,6 +204,8 @@ Window options:
 - `select`: if a window with `name` exists, select it instead of creating a new
   one.
 
+Configuration is validated during `setup()`.
+
 ## vim-test
 
 Tux works well as a [vim-test](https://github.com/vim-test/vim-test) strategy:

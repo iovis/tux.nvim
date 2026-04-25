@@ -112,6 +112,68 @@ tux.default_config = {
 ---@type tux.Config
 tux.config = tux.default_config
 
+local function one_of(values)
+  return function(value)
+    for _, allowed in ipairs(values) do
+      if value == allowed then
+        return true
+      end
+    end
+
+    return false
+  end
+end
+
+---@param config tux.Config
+local function validate_config(config)
+  vim.validate(
+    "default_strategy",
+    config.default_strategy,
+    one_of({ "pane", "window", "popup" }),
+    false,
+    '"pane"|"window"|"popup"'
+  )
+
+  vim.validate(
+    "pane.orientation",
+    config.pane.orientation,
+    one_of({ "horizontal", "vertical" }),
+    false,
+    '"horizontal"|"vertical"'
+  )
+  vim.validate("pane.size", config.pane.size, "number")
+  vim.validate("pane.target", config.pane.target, "string")
+
+  vim.validate(
+    "popup.auto_close",
+    config.popup.auto_close,
+    one_of({ "on", "off", "success" }),
+    false,
+    '"on"|"off"|"success"'
+  )
+  vim.validate(
+    "popup.border",
+    config.popup.border,
+    one_of({ "single", "rounded", "double", "heavy", "simple", "padded", "none" }),
+    false,
+    '"single"|"rounded"|"double"|"heavy"|"simple"|"padded"|"none"'
+  )
+  vim.validate("popup.width", config.popup.width, "string")
+  vim.validate("popup.height", config.popup.height, "string")
+  vim.validate("popup.title", config.popup.title, "string", true)
+
+  vim.validate("send.target", config.send.target, "string", true)
+  vim.validate("send.focus", config.send.focus, "boolean")
+  vim.validate("send.enter", config.send.enter, "boolean")
+
+  vim.validate("file.prefix", config.file.prefix, "string")
+  vim.validate("file.modifier", config.file.modifier, "string")
+
+  vim.validate("window.detached", config.window.detached, "boolean")
+  vim.validate("window.name", config.window.name, "string", true)
+  vim.validate("window.select", config.window.select, "boolean")
+end
+
 local function in_tmux()
   if not vim.env.TMUX then
     vim.notify("Not in tmux session", vim.log.levels.WARN)
@@ -381,6 +443,7 @@ tux.setup = function(opts)
   opts = opts or {}
   ---@type tux.Config
   local config = vim.tbl_deep_extend("force", tux.default_config, opts)
+  validate_config(config)
   tux.config = config
   generate_commands()
 end
