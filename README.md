@@ -29,6 +29,9 @@ local tux = require("tux")
 vim.keymap.set("n", "c<space>", ":Tux<space>")
 vim.keymap.set("n", "s<cr>", "<cmd>Tux just run<cr>")
 vim.keymap.set("n", "m<cr>", "<cmd>Tux just build<cr>")
+vim.keymap.set("n", "<leader>i", "<cmd>Tux Up<cr>", {
+  desc = "[tux] repeat last command",
+})
 
 vim.keymap.set("n", "<leader>I", ":.Tux<cr>", {
   desc = "[tux] execute current line",
@@ -57,7 +60,8 @@ end, {
 })
 ```
 
-`:Tux` accepts shell commands, so filetype-local mappings can stay very small:
+`:Tux` accepts shell commands or tmux key names, so filetype-local mappings can
+stay very small:
 
 ```lua
 vim.keymap.set("n", "s<cr>", "<cmd>Tux cargo run --release<cr>", { buf = 0 })

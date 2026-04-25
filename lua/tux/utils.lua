@@ -13,13 +13,12 @@ M.tmux = function(args)
   return vim.system(command, { text = true }):wait()
 end
 
----Expand Vim command-line filename modifiers, send the command to target, and press Enter
+---Expand Vim command-line filename modifiers, send the command or tmux key to target, and press Enter
 ---@param command string
 ---@param target string
 M.send_command = function(command, target)
   command = vim.fn.expandcmd(command)
-  M.send_text(command, target)
-  M.send_enter(target)
+  M.tmux({ "send-keys", "-t", target, "--", command, "Enter" })
 end
 
 ---Send literal text to target
