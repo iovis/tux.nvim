@@ -43,6 +43,18 @@ vim.keymap.set("n", "<leader>S", function()
 end, {
   desc = "[tux] run a task from the Justfile",
 })
+
+vim.keymap.set("n", "<m-p>", function()
+  tux.send_file()
+end, {
+  desc = "[tux] send current file",
+})
+
+vim.keymap.set({ "n", "x" }, "<m-n>", function()
+  tux.send_location()
+end, {
+  desc = "[tux] send current file location",
+})
 ```
 
 `:Tux` accepts shell commands, so filetype-local mappings can stay very small:
@@ -89,6 +101,9 @@ pasted literally into the target tmux pane:
 local tux = require("tux")
 
 tux.run(command)
+tux.send(text, opts)
+tux.send_file(opts)
+tux.send_location(opts)
 tux.run_range(line1, line2, opts)
 tux.pane(command, opts)
 tux.window(command, opts)
@@ -111,6 +126,14 @@ tux.popup("just run", {
 })
 ```
 
+`send_file()` sends a file reference such as `@lua/tux/init.lua`.
+`send_location()` sends a file reference with a line or visual line range, such
+as `@lua/tux/init.lua:42` or `@lua/tux/init.lua:42-50`.
+
+Both helpers use `send.target`, which defaults to `pane.target`. They do not
+create panes or press Enter by default, which keeps them suitable for prompt
+oriented tools such as Codex.
+
 ## Configuration
 
 ```lua
@@ -127,6 +150,15 @@ require("tux").setup({
     height = "50%",
     border = "rounded",
     title = nil,
+  },
+  send = {
+    target = nil,
+    focus = true,
+    enter = false,
+  },
+  file = {
+    prefix = "@",
+    modifier = "%:.",
   },
   window = {
     detached = false,
@@ -149,6 +181,17 @@ Popup options:
 - `width` / `height`: tmux popup dimensions.
 - `border`: tmux popup border style.
 - `title`: optional popup title.
+
+Send options:
+
+- `target`: tmux target pane. Defaults to `pane.target`.
+- `focus`: select the target pane after sending text.
+- `enter`: press Enter after sending text.
+
+File options:
+
+- `prefix`: text prepended to file references.
+- `modifier`: Vim filename modifier used with `expand()`.
 
 Window options:
 

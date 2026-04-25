@@ -8,12 +8,26 @@ M.execute = function(command)
   vim.cmd(command)
 end
 
----Send keys to target
+---Expand Vim command-line filename modifiers, send the command to target, and press Enter
 ---@param command string
 ---@param target string
-M.send_keys = function(command, target)
-  local tmux_command = ("tmux send -t %s %s Enter"):format(target, vim.fn.shellescape(command))
-  M.execute(tmux_command)
+M.send_command = function(command, target)
+  command = vim.fn.expandcmd(command)
+  M.send_text(command, target)
+  M.send_enter(target)
+end
+
+---Send literal text to target
+---@param text string
+---@param target string
+M.send_text = function(text, target)
+  vim.system({ "tmux", "send-keys", "-t", target, "-l", "--", text }, { text = true }):wait()
+end
+
+---Send enter to target
+---@param target string
+M.send_enter = function(target)
+  vim.system({ "tmux", "send-keys", "-t", target, "Enter" }, { text = true }):wait()
 end
 
 ---Paste literal text into target pane using a temporary tmux buffer
@@ -32,6 +46,17 @@ M.focus_last_pane = function()
   vim.fn.system("tmux last-pane")
 end
 
+---Navigate to target pane
+---@param target string
+M.focus_pane = function(target)
+  if target == "{last}" or target == ":.{last}" then
+    M.focus_last_pane()
+    return
+  end
+
+  vim.system({ "tmux", "select-pane", "-t", target }, { text = true }):wait()
+end
+
 ---Number of panes in current window
 ---@return number
 M.number_of_panes = function()
@@ -42,12 +67,11 @@ end
 ---Exit copy mode from the given pane
 ---@param pane string Tmux target pane
 M.exit_copy_mode = function(pane)
-  local command = ("tmux send -t %s -X cancel"):format(pane)
-  vim.fn.system(command)
+  vim.system({ "tmux", "send-keys", "-t", pane, "-X", "cancel" }, { text = true }):wait()
 end
 
 ---Create pane
----@param opts tux.pane.Opts
+---@param opts tux.pane.Config
 M.create_pane = function(opts)
   assert(
     opts.orientation == "horizontal" or opts.orientation == "vertical",
