@@ -129,7 +129,7 @@ end
 local function prepare_pane(opts)
   if u.number_of_panes() == 1 then
     u.create_pane(opts)
-    u.focus_last_pane()
+    u.select_last_pane()
   else
     u.exit_copy_mode(opts.target)
   end
@@ -170,6 +170,15 @@ local function file_reference(opts)
   return ("%s%s"):format(opts.prefix, vim.fn.expand(opts.modifier))
 end
 
+---@param command string
+---@return string
+local function shell_command(command)
+  local shell = vim.fn.shellescape(vim.env.SHELL or "sh")
+  local expanded_command = vim.fn.shellescape(vim.fn.expandcmd(command))
+
+  return ("%s -i -c %s"):format(shell, expanded_command)
+end
+
 ---Run command in Tmux using the default strategy
 ---@param command string
 tux.run = function(command)
@@ -197,7 +206,7 @@ tux.send = function(text, opts)
   end
 
   if send_opts.focus then
-    u.focus_pane(target)
+    u.select_pane(target)
   end
 end
 
@@ -242,8 +251,9 @@ tux.run_range = function(line1, line2, opts)
   local text = range_text(line1, line2)
   if text ~= "" then
     u.paste_text(text, pane_opts.target)
+    u.send_enter(pane_opts.target)
   else
-    u.focus_last_pane()
+    u.select_last_pane()
   end
 end
 
@@ -258,28 +268,28 @@ tux.window = function(command, opts)
   ---@type tux.window.Config
   local window_opts = vim.tbl_deep_extend("force", tux.config.window, opts or {})
 
-  local tmux_command = "tmux new-window"
+  local tmux_args = { "new-window" }
 
   if window_opts.detached then
-    tmux_command = ("%s -d"):format(tmux_command)
+    table.insert(tmux_args, "-d")
   end
 
   if window_opts.name then
-    local name = vim.fn.shellescape(window_opts.name)
-    tmux_command = ("%s -n %s"):format(tmux_command, name)
+    table.insert(tmux_args, "-n")
+    table.insert(tmux_args, window_opts.name)
   end
 
   if window_opts.select then
     assert(window_opts.name and not window_opts.detached, "`select` requires a `name` and it can't be detached")
 
-    tmux_command = ("%s -S"):format(tmux_command)
+    table.insert(tmux_args, "-S")
   end
 
   if command ~= "" then
-    tmux_command = tmux_command .. " $SHELL -i -c " .. vim.fn.shellescape(command)
+    table.insert(tmux_args, shell_command(command))
   end
 
-  u.execute(tmux_command)
+  u.tmux(tmux_args)
 end
 
 ---Run command in a Tmux popup
@@ -293,27 +303,32 @@ tux.popup = function(command, opts)
   ---@type tux.popup.Config
   local popup_opts = vim.tbl_deep_extend("force", tux.config.popup, opts or {})
 
-  local tmux_command = ("tmux display-popup -b %s -w %s -h %s"):format(
+  local tmux_args = {
+    "display-popup",
+    "-b",
     popup_opts.border,
-    vim.fn.escape(popup_opts.width, "%"),
-    vim.fn.escape(popup_opts.height, "%")
-  )
+    "-w",
+    popup_opts.width,
+    "-h",
+    popup_opts.height,
+  }
 
   if popup_opts.auto_close == "on" then
-    tmux_command = tmux_command .. " -E"
+    table.insert(tmux_args, "-E")
   elseif popup_opts.auto_close == "success" then
-    tmux_command = tmux_command .. " -EE"
+    table.insert(tmux_args, "-EE")
   end
 
   if popup_opts.title then
-    tmux_command = ("%s -T %s"):format(tmux_command, popup_opts.title)
+    table.insert(tmux_args, "-T")
+    table.insert(tmux_args, popup_opts.title)
   end
 
   if command ~= "" then
-    tmux_command = tmux_command .. " $SHELL -i -c " .. vim.fn.shellescape(command)
+    table.insert(tmux_args, shell_command(command))
   end
 
-  u.execute(tmux_command)
+  u.tmux(tmux_args)
 end
 
 ---Run command in a Tmux pane
@@ -332,7 +347,7 @@ tux.pane = function(command, opts)
   if command ~= "" then
     u.send_command(command, pane_opts.target)
   else
-    u.focus_last_pane()
+    u.select_last_pane()
   end
 end
 

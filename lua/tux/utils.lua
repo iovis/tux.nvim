@@ -1,11 +1,16 @@
 local M = {}
 
----Wraps a `command` in a `silent !{command}` and executes it
----This allows things like `%` to be expanded
----@param command string
-M.execute = function(command)
-  command = ("silent !%s"):format(command)
-  vim.cmd(command)
+---Run tmux with argv arguments
+---@param args string[]
+---@return table
+M.tmux = function(args)
+  local command = { "tmux" }
+
+  for _, arg in ipairs(args) do
+    table.insert(command, arg)
+  end
+
+  return vim.system(command, { text = true }):wait()
 end
 
 ---Expand Vim command-line filename modifiers, send the command to target, and press Enter
@@ -21,13 +26,13 @@ end
 ---@param text string
 ---@param target string
 M.send_text = function(text, target)
-  vim.system({ "tmux", "send-keys", "-t", target, "-l", "--", text }, { text = true }):wait()
+  M.tmux({ "send-keys", "-t", target, "-l", "--", text })
 end
 
 ---Send enter to target
 ---@param target string
 M.send_enter = function(target)
-  vim.system({ "tmux", "send-keys", "-t", target, "Enter" }, { text = true }):wait()
+  M.tmux({ "send-keys", "-t", target, "Enter" })
 end
 
 ---Paste literal text into target pane using a temporary tmux buffer
@@ -36,38 +41,37 @@ end
 M.paste_text = function(text, target)
   local buffer_name = ("tux.nvim.%d"):format(vim.fn.getpid())
 
-  vim.system({ "tmux", "set-buffer", "-b", buffer_name, "--", text }, { text = true }):wait()
-  vim.system({ "tmux", "paste-buffer", "-t", target, "-b", buffer_name, "-d" }, { text = true }):wait()
-  vim.system({ "tmux", "send-keys", "-t", target, "Enter" }, { text = true }):wait()
+  M.tmux({ "set-buffer", "-b", buffer_name, "--", text })
+  M.tmux({ "paste-buffer", "-t", target, "-b", buffer_name, "-d" })
 end
 
----Navigate to last pane
-M.focus_last_pane = function()
-  vim.fn.system("tmux last-pane")
+---Select the previously active pane
+M.select_last_pane = function()
+  M.tmux({ "last-pane" })
 end
 
----Navigate to target pane
+---Select target pane
 ---@param target string
-M.focus_pane = function(target)
+M.select_pane = function(target)
   if target == "{last}" or target == ":.{last}" then
-    M.focus_last_pane()
+    M.select_last_pane()
     return
   end
 
-  vim.system({ "tmux", "select-pane", "-t", target }, { text = true }):wait()
+  M.tmux({ "select-pane", "-t", target })
 end
 
 ---Number of panes in current window
 ---@return number
 M.number_of_panes = function()
-  local number_of_panes = vim.fn.system("tmux list-panes | wc -l")
-  return tonumber(number_of_panes) --[[@as number]]
+  local result = M.tmux({ "display-message", "-p", "#{window_panes}" })
+  return tonumber(vim.trim(result.stdout or "")) or 0
 end
 
 ---Exit copy mode from the given pane
 ---@param pane string Tmux target pane
 M.exit_copy_mode = function(pane)
-  vim.system({ "tmux", "send-keys", "-t", pane, "-X", "cancel" }, { text = true }):wait()
+  M.tmux({ "send-keys", "-t", pane, "-X", "cancel" })
 end
 
 ---Create pane
@@ -86,8 +90,7 @@ M.create_pane = function(opts)
     orientation = "-h"
   end
 
-  local command = ("tmux split-window %s -l '%d%%'"):format(orientation, opts.size)
-  vim.fn.system(command)
+  M.tmux({ "split-window", orientation, "-l", ("%d%%"):format(opts.size) })
 end
 
 return M
