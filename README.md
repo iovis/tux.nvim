@@ -100,14 +100,16 @@ pasted literally into the target tmux pane:
 ```lua
 local tux = require("tux")
 
-tux.run(command)
-tux.send(text, opts)
-tux.send_file(opts)
-tux.send_location(opts)
+tux.run(command)  -- uses `config.default_strategy`
 tux.run_range(line1, line2, opts)
+
 tux.pane(command, opts)
 tux.window(command, opts)
 tux.popup(command, opts)
+
+tux.send(text, opts)
+tux.send_file(opts)
+tux.send_location(opts)
 ```
 
 Examples:
