@@ -151,6 +151,7 @@ require("tux").setup({
     orientation = "horizontal",
     size = 30,
     target = ":.{last}",
+    focus = false,
   },
   popup = {
     auto_close = "off",
@@ -180,8 +181,8 @@ Pane options:
 
 - `orientation`: `"horizontal"` or `"vertical"`.
 - `size`: pane size as a percentage.
-- `target`: tmux target pane. The default targets the last pane in the current
-  window.
+- `target`: tmux target pane. The default targets the last pane in the current window.
+- `focus`: select the target pane after sending the command.
 
 Popup options:
 

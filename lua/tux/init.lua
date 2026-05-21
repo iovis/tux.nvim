@@ -11,11 +11,13 @@ local tux = {}
 ---@field orientation? tux.pane.orientation
 ---@field size? number Size as percentage
 ---@field target? string
+---@field focus? boolean
 
 ---@class tux.pane.Config
 ---@field orientation tux.pane.orientation
 ---@field size number Size as percentage
 ---@field target string
+---@field focus boolean
 
 ---@class tux.popup.Opts
 ---@field auto_close? tux.popup.close_on_exit
@@ -85,6 +87,7 @@ tux.default_config = {
     orientation = "horizontal",
     size = 30,
     target = ":.{last}",
+    focus = false,
   },
   popup = {
     auto_close = "off",
@@ -143,6 +146,7 @@ local function validate_config(config)
   )
   vim.validate("pane.size", config.pane.size, "number")
   vim.validate("pane.target", config.pane.target, "string")
+  vim.validate("pane.focus", config.pane.focus, "boolean")
 
   vim.validate(
     "popup.auto_close",
@@ -310,13 +314,17 @@ tux.run_range = function(line1, line2, opts)
   if text ~= "" then
     u.paste_text(text, pane_opts.target)
     u.send_enter(pane_opts.target)
+
+    if pane_opts.focus then
+      u.select_pane(pane_opts.target)
+    end
   else
     u.select_last_pane()
   end
 end
 
 ---Run command in a Tmux window
----@param command string
+---@param command? string
 ---@param opts? tux.window.Opts
 tux.window = function(command, opts)
   if not in_tmux() then
@@ -343,7 +351,7 @@ tux.window = function(command, opts)
     table.insert(tmux_args, "-S")
   end
 
-  if command ~= "" then
+  if command and command ~= "" then
     table.insert(tmux_args, shell_command(command))
   end
 
@@ -382,7 +390,7 @@ tux.popup = function(command, opts)
     table.insert(tmux_args, popup_opts.title)
   end
 
-  if command ~= "" then
+  if command and command ~= "" then
     table.insert(tmux_args, shell_command(command))
   end
 
@@ -390,7 +398,7 @@ tux.popup = function(command, opts)
 end
 
 ---Run command in a Tmux pane
----@param command string
+---@param command? string
 ---@param opts? tux.pane.Opts
 tux.pane = function(command, opts)
   if not in_tmux() then
@@ -402,8 +410,12 @@ tux.pane = function(command, opts)
 
   prepare_pane(pane_opts)
 
-  if command ~= "" then
+  if command and command ~= "" then
     u.send_command(command, pane_opts.target)
+
+    if pane_opts.focus then
+      u.select_pane(pane_opts.target)
+    end
   else
     u.select_last_pane()
   end
